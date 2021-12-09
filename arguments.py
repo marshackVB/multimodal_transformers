@@ -125,3 +125,7 @@ class MultiModelTrainingArgs(TrainingArguments):
         default=False, metadata={"help": "Indicates if artifacts should be logged to a remote tracking server"}
     )
 
+    dataloader_pin_memory: bool = field(
+        default=False, metadata={"help": "Indicates if dataloader should be pinned to memory"}
+    )
+
