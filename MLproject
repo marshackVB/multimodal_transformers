@@ -1,0 +1,10 @@
+
+name: multimodel-transformer
+
+conda_env: environment.yml
+
+entry_points:
+  main:
+    parameters:
+      config_file: {type: string, default: None}
+    command: "python train.py {config_file}"
