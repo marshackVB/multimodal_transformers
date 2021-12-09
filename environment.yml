@@ -6,7 +6,7 @@ dependencies:
   - python=3.8.12
   - pip
   - pip:
-    - pytorch
+    - torch
     - transformers
     - datasets
     - pandas
