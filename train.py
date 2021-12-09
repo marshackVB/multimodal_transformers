@@ -45,9 +45,11 @@ def main():
     test_df = pd.read_csv(os.path.abspath(data_args.test_data_path_or_table_name), 
                         index_col=0)
 
-    train_df = train_df.sample(frac=1).reset_index(drop=True)[:200]
-    #test_df = test_df.sample(frac=1).reset_index(drop=True)[:2000]
-    test_df = train_df.copy(deep=True)
+    train_df = train_df.sample(frac=1).reset_index(drop=True)
+    test_df = test_df.sample(frac=1).reset_index(drop=True)
+    # Data sample for local testing...
+    #train_df = train_df.sample(frac=1).reset_index(drop=True)[:200]
+    #test_df = train_df.copy(deep=True)
 
 
     # Transform features
@@ -120,6 +122,7 @@ def main():
 
     
     #trainer.evaluate()
+
     #trainer.train(model_path = training_args.logging_dir if os.path.isdir(training_args.logging_dir) else None)
     #trainer.save_model()
 
