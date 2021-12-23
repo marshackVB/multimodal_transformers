@@ -1,5 +1,6 @@
 import os
 import sys
+from pickle import dump
 from sys import version_info
 import json
 import pandas as pd
@@ -10,7 +11,7 @@ from transformers import (DistilBertForSequenceClassification, DistilBertTokeniz
                           HfArgumentParser)
 from arguments import DataArguments, ModelArgs, MultiModelTrainingArgs
 from transformations import AutoTokenize, get_feature_names, get_transformer
-from model import MultiModalLoader, MultiModelTransformer, compute_metrics
+from model import MultiModalLoader, MultiModalTransformer, compute_metrics
 from helpers import get_best_metrics
 import mlflow
 
@@ -26,7 +27,7 @@ def main():
     parser = HfArgumentParser([DataArguments, ModelArgs, MultiModelTrainingArgs])
 
     # Temp load json config
-    data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath("datasets/ecommerce_reviews/training_config.json"))
+    #data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath("datasets/ecommerce_reviews/training_config.json"))
 
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
@@ -70,6 +71,7 @@ def main():
     y_test = test_df[label]
 
     # Data loader
+    #train_data = MultiModalLoader(x_train, y_train, 'autotokenize__input_ids', 'autotokenize__attention_mask', pin_memory=False)
     train_data = MultiModalLoader(x_train, y_train, 'autotokenize__input_ids', 'autotokenize__attention_mask')
     test_data = MultiModalLoader(x_test, y_test, 'autotokenize__input_ids', 'autotokenize__attention_mask')
 
@@ -79,9 +81,9 @@ def main():
                 cache_dir=model_args.cache_dir,
             )
 
-    config.num_cat_features_dim = len(train_data.num_cat_features)
+    config.num_cat_features_dim = len(train_data.num_cat_feature_cols)
 
-    model = MultiModelTransformer.from_pretrained(model_args.model_name_or_path, config=config)
+    model = MultiModalTransformer.from_pretrained(model_args.model_name_or_path, config=config)
 
     trainer = Trainer(model = model,
                       args = training_args,
@@ -117,8 +119,12 @@ def main():
                  "python_version":         python_version}
     
         mlflow.log_params(params)
+
+        dump(transformer, open('transformer.pkl', 'wb'))
         trainer.save_model('./huggingface_model')
+
         mlflow.log_artifacts('./huggingface_model', artifact_path='huggingface_model')
+        mlflow.log_artifact('transformer.pkl')
 
     
     #trainer.evaluate()
