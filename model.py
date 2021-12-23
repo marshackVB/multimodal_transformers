@@ -5,14 +5,32 @@ from sklearn.metrics import precision_recall_fscore_support
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
+def input_ids_tensors(df, input_ids_col):
+    return (torch.tensor(df[input_ids_col])
+                          .to(torch.int64)
+                          .to(device))
+
+def attention_mask_tensors(df, attention_mask_col):
+    return (torch.tensor(df[attention_mask_col])
+                          .to(torch.int64)
+                          .to(device))
+
+def num_cat_feature_tensors(df, num_cat_feature_cols):
+    return (torch.tensor(df[num_cat_feature_cols]
+                          .to_numpy(dtype='float32'))
+                          .float()
+                          .to(device))
+
+
 class MultiModalLoader(torch.utils.data.Dataset):
     def __init__(self, x_train, y_train, input_ids_col, attention_mask_col):
         self.x_train = x_train
         self.y_train = y_train
         self.input_ids_col = input_ids_col
         self.attention_mask_col = attention_mask_col
-        self.num_cat_features = [feature for feature in x_train.columns if feature not in
-                                    [input_ids_col, attention_mask_col]]
+        self.num_cat_feature_cols = [feature for feature in x_train.columns if feature not in
+                                     [input_ids_col, attention_mask_col]]
         
 
     def __len__(self):
@@ -22,6 +40,13 @@ class MultiModalLoader(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         x_train_row = self.x_train.iloc[idx]
 
+        input_ids = input_ids_tensors(x_train_row, self.input_ids_col)
+
+        attention_mask = attention_mask_tensors(x_train_row, self.attention_mask_col)
+
+        num_cat_features = num_cat_feature_tensors(x_train_row, self.num_cat_feature_cols)
+
+        """
         input_ids = (torch.tensor(x_train_row[self.input_ids_col])
                           .to(torch.int64)
                           .to(device))
@@ -30,11 +55,12 @@ class MultiModalLoader(torch.utils.data.Dataset):
                                .to(torch.int64)
                                .to(device))
 
-        num_cat_features = (torch.tensor(x_train_row[self.num_cat_features]
+        num_cat_features = (torch.tensor(x_train_row[self.num_cat_feature_cols]
                                  .to_numpy(dtype='float32'))
                                  .float()
                                  .to(device))
-
+        """
+        
         label = (torch.tensor(self.y_train.iloc[idx])
                       .unsqueeze(0)
                       .to(torch.int64)
@@ -60,7 +86,7 @@ class MLP(nn.Module):
         return output
 
 
-class MultiModelTransformer(DistilBertForSequenceClassification):
+class MultiModalTransformer(DistilBertForSequenceClassification):
     def __init__(self, config):
         super().__init__(config)
         """
@@ -108,11 +134,16 @@ class MultiModelTransformer(DistilBertForSequenceClassification):
         combined_features = torch.cat((pooled_output, num_cat_features), dim=1)
         logits = self.classifier(combined_features)
 
-        loss_fct = nn.CrossEntropyLoss()
-        loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
-        output = (logits,) + outputs[1:]
-        return ((loss,) + output)
+        if labels is not None:
+            loss_fct = nn.CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+
+            output = (logits,) + outputs[1:]
+            return ((loss,) + output)
+
+        softmax = nn.Softmax(dim=1)
+        return softmax(logits)
 
 
     def weight_init(self,  m, activation='linear'):
