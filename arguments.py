@@ -19,10 +19,6 @@ class DataArguments:
         metadata={"help": "Location of testing data"}
     )
 
-    n_tokens:str = field(
-        metadata={"help": "Max number of tokens passed to tokenizer"}
-    )
-
     column_info_path:str = field(
         metadata={"help": "File containing colum-level information"}
     )
@@ -40,12 +36,21 @@ class DataArguments:
 @dataclass
 class ModelArgs:
 
-    num_labels:str = field(
+
+    max_length:int = field(
+        metadata={"help": "Max number of tokens passed to tokenizer"}
+    )
+
+    tokenizer_batch_size:int = field(
+        metadata={"help": "Batch size fed to tokenizer"}
+    )
+
+    num_labels:int = field(
         metadata={"help": "Number of labels to predict"}
     )
 
     model_name_or_path:str = field(
-        default="distilbert-base-uncased", metadata={"help": "Path to pretrained model of model identifier"}
+        metadata={"help": "Path to pretrained model of model identifier"}
     )
 
     cache_dir: Optional[str] = field(
@@ -89,7 +94,7 @@ class MultiModelTrainingArgs(TrainingArguments):
         default="steps", metadata={"help": "The interval at which logs will be generated"}
     )
 
-    logging_steps: str = field(
+    logging_steps: int = field(
         default=50, metadata={"help": "The frequency at which logs will be written"}
     )
 
