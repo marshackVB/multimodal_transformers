@@ -15,7 +15,7 @@ import warnings
 
 
 class AutoTokenize(BaseEstimator, TransformerMixin):
-    def __init__(self, model_type="distilbert-base-uncased", max_length=100, batch_size=200) -> None:
+    def __init__(self, model_type, max_length, batch_size) -> None:
         self.model_type = model_type
         self.max_length = max_length
         self.batch_size = batch_size
@@ -51,14 +51,14 @@ class AutoTokenize(BaseEstimator, TransformerMixin):
         return self.feature_names
 
 
-def get_transformer(model_type, text_cols, numeric_cols, categorical_cols):
+def get_transformer(model_type, text_cols, numeric_cols, categorical_cols, max_length, tokenizer_batch_size):
 
     categorical = OneHotEncoder(sparse=False)
 
     numeric= make_pipeline(SimpleImputer(), 
                            PowerTransformer(method='yeo-johnson', standardize=True))
 
-    text = make_pipeline(AutoTokenize(model_type=model_type))
+    text = make_pipeline(AutoTokenize(model_type, max_length, tokenizer_batch_size))
 
     transformer = ColumnTransformer(transformers=[('categorical_transform ', categorical , categorical_cols),
                                                   ('numerical_transform ',   numeric,      numeric_cols),
