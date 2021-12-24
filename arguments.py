@@ -27,6 +27,10 @@ class DataArguments:
         metadata={"help": "Location of MLflow experiment"}
     )
 
+    training_sample_record_num:int = field(
+        metadata={"help": "Number of training records to sample for a dev/testing"}
+    )
+
     def __post_init__(self):
         with open(os.path.abspath(self.column_info_path), 'r') as f:
             self.column_info = json.load(f)
@@ -61,6 +65,14 @@ class ModelArgs:
 
 @dataclass
 class MultiModelTrainingArgs(TrainingArguments):
+
+    early_stopping_patience: int = field(
+        default=2, metadata={"help": "Number of early stopping epochs before threshold must be met"}
+    )
+
+    early_stopping_threshold: float = field(
+        default=0.01, metadata={"help": "Indicates if dataloader should be pinned to memory"}
+    )
  
     databricks_profile: Optional[str] = field(
         default=None, metadata={"help": "The Databricks CLI profile used to autenticate to a Workspace"}
@@ -68,34 +80,6 @@ class MultiModelTrainingArgs(TrainingArguments):
 
     do_train: bool = field(
         default=True, metadata={"help": "Indicates if model training should occure"}
-    )
-
-    per_device_train_batch_size: int = field(
-        default=64, metadata={"help": "Training loop batch size"}
-    )
-
-    per_device_eval_batch_size: int = field(
-        default=64, metadata={"help": "Evaluation loop batch size"}
-    )
-
-    save_strategy: str = field(
-        default="epoch", metadata={"help": "The interval at which checkpoints will be saved"}
-    )
-
-    save_total_limit: int = field(
-        default=10, metadata={"help": "The maximum number of checkpoint files that will be saved"}
-    )
-
-    evaluation_strategy: str = field(
-        default="epoch", metadata={"help": "The Databricks CLI profile used to autenticate to a Workspace"}
-    )
-
-    logging_strategy: str = field(
-        default="steps", metadata={"help": "The interval at which logs will be generated"}
-    )
-
-    logging_steps: int = field(
-        default=50, metadata={"help": "The frequency at which logs will be written"}
     )
 
     overwrite_output_dir: bool = field(
@@ -133,4 +117,5 @@ class MultiModelTrainingArgs(TrainingArguments):
     dataloader_pin_memory: bool = field(
         default=False, metadata={"help": "Indicates if dataloader should be pinned to memory"}
     )
+
 
