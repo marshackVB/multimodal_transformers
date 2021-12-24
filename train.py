@@ -1,49 +1,20 @@
 import os
-import sys
 from pickle import dump
 from sys import version_info
 import json
 import pandas as pd
-from itertools import islice
 import torch
-from transformers import (DistilBertForSequenceClassification, DistilBertTokenizerFast, Trainer, TrainingArguments,
-                          AutoConfig, AutoTokenizer, AutoModelForSequenceClassification, DistilBertConfig, 
-                          HfArgumentParser)
+from transformers import Trainer, AutoConfig, HfArgumentParser
+import mlflow
 from arguments import DataArguments, ModelArgs, MultiModelTrainingArgs
 from transformations import AutoTokenize, get_feature_names, get_transformer
-from model import MultiModalLoader, MultiModalTransformer, compute_metrics
-from helpers import get_best_metrics
-import mlflow
-
-
-#%load_ext autoreload
-#%autoreload 2
-#%aimport transformations,  model, arguments
+from model import MultiModalLoader, MultiModalTransformer, compute_metrics, get_best_metrics
 
 
 def main(data_args, model_args, training_args):
 
-    print("Main method is running")
-
-    # Parse arguments
-    
-
-    # Temp load json config
-    #data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath("datasets/ecommerce_reviews/training_config.json"))
-
-    """
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
-    else:
-        raise Exception("You must provide a json configuration file as the single argument to the program")
-
-    data_args, model_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
-    """
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-
-    # Ingest
     train_df = pd.read_csv(os.path.abspath(data_args.train_data_path_or_table_name), 
                         index_col=0)
 
@@ -56,8 +27,6 @@ def main(data_args, model_args, training_args):
     #train_df = train_df.sample(frac=1).reset_index(drop=True)[:200]
     #test_df = train_df.copy(deep=True)
 
-
-    # Transform features
     transformer = (get_transformer(model_type =           model_args.model_name_or_path, 
                                    text_cols =            data_args.column_info["text_cols"],
                                    numeric_cols =         data_args.column_info["num_cols"], 
@@ -76,8 +45,6 @@ def main(data_args, model_args, training_args):
     x_test = pd.DataFrame(x_test, columns=get_feature_names(transformer))
     y_test = test_df[label]
 
-    # Data loader
-    #train_data = MultiModalLoader(x_train, y_train, 'autotokenize__input_ids', 'autotokenize__attention_mask', pin_memory=False)
     train_data = MultiModalLoader(x_train, y_train, 'autotokenize__input_ids', 'autotokenize__attention_mask')
     test_data = MultiModalLoader(x_test, y_test, 'autotokenize__input_ids', 'autotokenize__attention_mask')
 
@@ -132,11 +99,6 @@ def main(data_args, model_args, training_args):
         mlflow.log_artifacts('./huggingface_model', artifact_path='huggingface_model')
         mlflow.log_artifact('transformer.pkl')
 
-    
-    #trainer.evaluate()
-
-    #trainer.train(model_path = training_args.logging_dir if os.path.isdir(training_args.logging_dir) else None)
-    #trainer.save_model()
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -160,17 +122,9 @@ if __name__ == "__main__":
     parser.add_argument("--logging_strategy",               help="Logging strategy")
     parser.add_argument("--logging_steps",                  help="Number of logging steps")
 
-    """
-    args = parser.parse_args()
-    print("Training model with arguments:")
-    for arg in vars(args):
-        print(f"  {arg}: {getattr(args, arg)}")
-    """
 
     hf_argparser = HfArgumentParser([DataArguments, ModelArgs, MultiModelTrainingArgs])
 
-    #data_args, model_args, training_args = hf_argparser.parse_args_into_dataclasses(args=sys.argv[1:], return_remaining_strings=True)
-    #data_args, model_args, training_args = hf_argparser.parse_args_into_dataclasses(args=sys.argv[1:], look_for_args_file=False)
     data_args, model_args, training_args = hf_argparser.parse_args_into_dataclasses(look_for_args_file=False)
 
     main(data_args, model_args, training_args)
