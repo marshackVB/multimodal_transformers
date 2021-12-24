@@ -172,7 +172,8 @@ def get_best_metrics(trainer) -> Dict[str, float]:
     best_log_idx = [idx for idx, values in all_log_history if values['step'] == best_step][0]
 
     best_log = metrics['log_history'][best_log_idx]
-    best_log.pop('epoch')
+    best_log['early_stopping_epoch'] = best_log.pop('epoch')
+    #best_log.pop('epoch')
 
     # Overal runtime metrics
     runtime_logs_idx = [idx for idx, values in enumerate(trainer.state.log_history) if values.get('train_runtime') is not None][0]
