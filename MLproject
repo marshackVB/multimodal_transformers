@@ -24,6 +24,10 @@ entry_points:
       evaluation_strategy: {type: str, default: "epoch"}
       logging_strategy: {type: str, default: "steps"}
       logging_steps: {type: int, default: 50}
+      training_sample_record_num: {type: int, default: 0}
+      early_stopping_patience: {type: int, default: 2}
+      early_stopping_threshold: {type: float, default: 0.01}
+
     command: "python train.py 
                 --model_name_or_path {model_name_or_path} 
                 --output_dir {output_dir}
@@ -42,4 +46,7 @@ entry_points:
                 --save_total_limit {save_total_limit}
                 --evaluation_strategy {evaluation_strategy}
                 --logging_strategy {logging_strategy}
-                --logging_steps {logging_steps}"
+                --logging_steps {logging_steps}
+                --training_sample_record_num {training_sample_record_num}
+                --early_stopping_patience {early_stopping_patience}
+                --early_stopping_threshold {early_stopping_threshold}"
