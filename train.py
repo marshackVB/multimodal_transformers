@@ -4,7 +4,7 @@ from sys import version_info
 import json
 import pandas as pd
 import torch
-from transformers import Trainer, AutoConfig, HfArgumentParser
+from transformers import Trainer, AutoConfig, HfArgumentParser, EarlyStoppingCallback
 import mlflow
 from arguments import DataArguments, ModelArgs, MultiModelTrainingArgs
 from transformations import AutoTokenize, get_feature_names, get_transformer
@@ -21,11 +21,14 @@ def main(data_args, model_args, training_args):
     test_df = pd.read_csv(os.path.abspath(data_args.test_data_path_or_table_name), 
                         index_col=0)
 
-    train_df = train_df.sample(frac=1).reset_index(drop=True)
-    test_df = test_df.sample(frac=1).reset_index(drop=True)
-    # Data sample for local testing...
-    #train_df = train_df.sample(frac=1).reset_index(drop=True)[:200]
-    #test_df = train_df.copy(deep=True)
+
+    if data_args.training_sample_record_num > 0:
+        train_df = train_df.sample(frac=1).reset_index(drop=True)[:data_args.training_sample_record_num]
+        test_df = train_df.copy(deep=True)
+    else:    
+        train_df = train_df.sample(frac=1).reset_index(drop=True)
+        test_df = test_df.sample(frac=1).reset_index(drop=True)
+
 
     transformer = (get_transformer(model_type =           model_args.model_name_or_path, 
                                    text_cols =            data_args.column_info["text_cols"],
@@ -58,11 +61,15 @@ def main(data_args, model_args, training_args):
 
     model = MultiModalTransformer.from_pretrained(model_args.model_name_or_path, config=config)
 
+    early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=2, 
+                                                    early_stopping_threshold=.01)
+
     trainer = Trainer(model = model,
                       args = training_args,
                       train_dataset = train_data,
                       eval_dataset = test_data,
-                      compute_metrics=compute_metrics)
+                      compute_metrics=compute_metrics,
+                      callbacks=[early_stopping_callback])
 
 
     with mlflow.start_run() as run:
@@ -121,6 +128,9 @@ if __name__ == "__main__":
     parser.add_argument("--evaluation_strategy",            help="Evaluation strategy")
     parser.add_argument("--logging_strategy",               help="Logging strategy")
     parser.add_argument("--logging_steps",                  help="Number of logging steps")
+    parser.add_argument("--training_sample_record_num",     help="Sample records for testing/dev")
+    parser.add_argument("--early_stopping_patience",        help="Early stopping epochs")
+    parser.add_argument("--early_stopping_threshold",       help="Early stopping threshold")
 
 
     hf_argparser = HfArgumentParser([DataArguments, ModelArgs, MultiModelTrainingArgs])
