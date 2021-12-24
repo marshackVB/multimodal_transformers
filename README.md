@@ -7,7 +7,7 @@ This project was inspired by the [Multimodal-Toolkit](https://github.com/georgia
 ## Training models remotely on Databricks and logging to Managed MLflow
 Models can easily be trained on Databricks hosted GPU-backed VMs and logged to Managed MLflow by executing the following steps.  
 1. Create an MLflow Tracking Server instance where all model training runs will be logged.
-![til](./img/create_experiment.gif)
+![til](img/create_experiment.gif)
 2. Copy the server's Experiment ID and store it in the runners/EXPERIMENT_ID file.
 3. Configure the [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html) on your local machine. This will allow your local machine to communicate with the Databricks Workspace.
     - Any easy way to test your connection is to list the Workspace directories from your terminal.  
@@ -26,6 +26,7 @@ Models can easily be trained on Databricks hosted GPU-backed VMs and logged to M
         export MLFLOW_TRACKING_URI=databricks://e2-demo-east
         ```
  4. Validate the cluster.config.json file which specifies the compute that will be provisioned for training. Generating the JSON is easily done through the Databricks UI. In the Clusters section of the UI, choose the single node cluster type, a recent (or latest) ML runtime, and a GPU backed VM instance. To the right of the screen, choose JSON to view the JSON configuration of the cluster.
+ ![til](img/cluster_config.gif)
 
  5. After the above items are complete and your runners/db_runner.sh script is adjusted for your use, execute the script. Navigate to the MLflow Tracking Server to monitor training progress.
     ```
