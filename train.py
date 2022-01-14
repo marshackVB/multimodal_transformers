@@ -14,12 +14,19 @@ from model import MultiModalLoader, MultiModalTransformer, compute_metrics, get_
 def main(data_args, model_args, training_args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    train_df = pd.read_csv(os.path.abspath(data_args.train_data_path_or_table_name), 
-                        index_col=0)
 
-    test_df = pd.read_csv(os.path.abspath(data_args.test_data_path_or_table_name), 
-                        index_col=0)
+    if data_args.train_data_path_or_table_name[-4:] == '.csv':
+    
+        train_df = pd.read_csv(os.path.abspath(data_args.train_data_path_or_table_name), 
+                            index_col=0)
+
+        test_df = pd.read_csv(os.path.abspath(data_args.test_data_path_or_table_name), 
+                            index_col=0)
+
+    else:
+        
+        train_df = spark.table(data_args.train_data_path_or_table_name).toPandas()
+        test_df = spark.table(data_args.test_data_path_or_table_name).toPandas()
 
 
     if data_args.training_sample_record_num > 0:
@@ -61,8 +68,8 @@ def main(data_args, model_args, training_args):
 
     model = MultiModalTransformer.from_pretrained(model_args.model_name_or_path, config=config)
 
-    early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=2, 
-                                                    early_stopping_threshold=.01)
+    early_stopping_callback = EarlyStoppingCallback(early_stopping_patience  = training_args.early_stopping_patience, 
+                                                    early_stopping_threshold = training_args.early_stopping_threshold)
 
     trainer = Trainer(model = model,
                       args = training_args,
@@ -131,10 +138,16 @@ if __name__ == "__main__":
     parser.add_argument("--training_sample_record_num",     help="Sample records for testing/dev")
     parser.add_argument("--early_stopping_patience",        help="Early stopping epochs")
     parser.add_argument("--early_stopping_threshold",       help="Early stopping threshold")
+    parser.add_argument("--backend_databricks",             help="Indicates project will be run on Databricks")
 
 
     hf_argparser = HfArgumentParser([DataArguments, ModelArgs, MultiModelTrainingArgs])
 
     data_args, model_args, training_args = hf_argparser.parse_args_into_dataclasses(look_for_args_file=False)
+
+    if training_args.backend_databricks:
+        import pyspark
+        spark = SparkSession.builder.appName("App").getOrCreate()
+
 
     main(data_args, model_args, training_args)
